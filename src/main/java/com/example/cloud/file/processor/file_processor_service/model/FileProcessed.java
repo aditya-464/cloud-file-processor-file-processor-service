@@ -1,10 +1,12 @@
 package com.example.cloud.file.processor.file_processor_service.model;
 
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -12,4 +14,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FileProcessed {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long uploadFileId;
+    private String originalFileName;
+    private String s3Key;
+    private String contentType;
+
+    @Column(columnDefinition = "TEXT")
+    private String processedContent;
+
+    private String status; // PROCESSING / SUCCESS / FAILED
+    private LocalDateTime processedAt;
 }
