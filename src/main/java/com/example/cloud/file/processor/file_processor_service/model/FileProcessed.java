@@ -25,7 +25,10 @@ public class FileProcessed {
     private String contentType;
 
     @Column(columnDefinition = "TEXT")
-    private String processedContent;
+    private String processedContent; // extracted text / summary
+
+    @Column(columnDefinition = "TEXT")
+    private String tableData; // JSON string for Excel sheets
 
     private String status; // PROCESSING / SUCCESS / FAILED
     private LocalDateTime processedAt;

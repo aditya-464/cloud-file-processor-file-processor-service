@@ -2,12 +2,14 @@ package com.example.cloud.file.processor.file_processor_service.service;
 
 import com.example.cloud.file.processor.file_processor_service.model.FileProcessed;
 import com.example.cloud.file.processor.file_processor_service.repository.FileProcessingRepository;
+import com.example.cloud.file.processor.file_processor_service.util.ExcelToJsonConverter;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 
 @Service
@@ -43,37 +45,58 @@ public class FileProcessingService {
             Metadata metadata = new Metadata();
             String detected = tika.detect(fileBytes);
             metadata.set(Metadata.CONTENT_TYPE, detected);
+            pf.setContentType(detected);
 
-            // Use Tika to extract text for PDF, Word, Excel, plain text, etc.
-            String extractedText;
-            try (ByteArrayInputStream in = new ByteArrayInputStream(fileBytes)) {
-                extractedText = tika.parseToString(in, metadata);
+
+            String lowerName = originalFileName == null ? "" : originalFileName.toLowerCase();
+
+            if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
+                try (InputStream in = new ByteArrayInputStream(fileBytes)) {
+                    String tableJson = ExcelToJsonConverter.convert(in);
+                    pf.setTableData(tableJson);
+
+                    // Also store a small summary text
+                    String summary = "Excel with " + (tableJson.length() > 0 ? "[table JSON]" : "[empty]");
+                    pf.setProcessedContent(normalizeExtractedText(summary));
+                }
+            } else {
+                // For other formats (pdf, docx, txt, etc.) use Tika parseToString
+                try (InputStream in = new ByteArrayInputStream(fileBytes)) {
+                    String extracted = tika.parseToString(in, metadata);
+                    pf.setProcessedContent(normalizeExtractedText(extracted));
+                }
             }
 
+            // Use Tika to extract text for PDF, Word, Excel, plain text, etc.
+//            String extractedText;
+//            try (ByteArrayInputStream in = new ByteArrayInputStream(fileBytes)) {
+//                extractedText = tika.parseToString(in, metadata);
+//            }
+
             // Basic normalization: limit huge outputs (optional)
-            String finalText = normalizeExtractedText(extractedText);
+//            String finalText = normalizeExtractedText(extractedText);
 
 
 
 
             // FINAL TEXT ************************
-            System.out.println(finalText);
+//            System.out.println(finalText);
             // FINAL TEXT ************************
 
 
 
 
-            pf.setProcessedContent(finalText);
+//            pf.setProcessedContent(finalText);
+//            pf.setContentType(detected);
             pf.setStatus("SUCCESS");
             pf.setProcessedAt(LocalDateTime.now());
-            pf.setContentType(detected);
             fileProcessingRepository.save(pf);
 
         } catch (Exception e) {
             pf.setStatus("FAILED");
             fileProcessingRepository.save(pf);
             // log properly in real app
-            e.printStackTrace();
+//            e.printStackTrace();
             // throwing exception to let global handler catch it
             throw e;
         }
