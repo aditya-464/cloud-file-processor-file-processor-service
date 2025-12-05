@@ -18,7 +18,7 @@ public class FileUploadTopic {
     public void consume(String message) throws Exception{
         JSONObject json = new JSONObject(message);
         Long uploadFileId = json.has("fileId") ? json.getLong("fileId") : null;
-        String s3Key = json.getString("s3Key"); // assume upload service sends key, not full url
+        String s3Key = json.getString("s3Key");
         String fileName = json.optString("fileName", "unknown");
 
         fileProcessingService.process(s3Key, uploadFileId, fileName);
