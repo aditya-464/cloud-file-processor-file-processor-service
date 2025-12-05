@@ -2,6 +2,8 @@ package com.example.cloud.file.processor.file_processor_service.service;
 
 import com.example.cloud.file.processor.file_processor_service.model.FileProcessed;
 import com.example.cloud.file.processor.file_processor_service.repository.FileProcessingRepository;
+import org.apache.tika.Tika;
+import org.apache.tika.metadata.Metadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,16 +15,18 @@ public class FileProcessingService {
 
     private final S3DownloadService s3DownloadService;
     private final FileProcessingRepository fileProcessingRepository;
+    private final Tika tika;
 
-    public FileProcessingService(S3DownloadService s3DownloadService, FileProcessingRepository fileProcessingRepository){
+    public FileProcessingService(S3DownloadService s3DownloadService, FileProcessingRepository fileProcessingRepository, Tika tika){
         this.s3DownloadService = s3DownloadService;
         this.fileProcessingRepository = fileProcessingRepository;
+        this.tika = tika;
     }
 
     @Value("${aws.s3.bucket-name}")
     private String bucket;
 
-    public void process(String s3Key, Long uploadFileId, String originalFileName) {
+    public void process(String s3Key, Long uploadFileId, String originalFileName) throws Exception {
         FileProcessed pf = FileProcessed.builder()
                 .uploadFileId(uploadFileId)
                 .originalFileName(originalFileName)
@@ -49,8 +53,18 @@ public class FileProcessingService {
             // Basic normalization: limit huge outputs (optional)
             String finalText = normalizeExtractedText(extractedText);
 
+
+
+
+            // FINAL TEXT ************************
+            System.out.println(finalText);
+            // FINAL TEXT ************************
+
+
+
+
             pf.setProcessedContent(finalText);
-            pf.setStatus("DONE");
+            pf.setStatus("SUCCESS");
             pf.setProcessedAt(LocalDateTime.now());
             pf.setContentType(detected);
             fileProcessingRepository.save(pf);
@@ -60,6 +74,8 @@ public class FileProcessingService {
             fileProcessingRepository.save(pf);
             // log properly in real app
             e.printStackTrace();
+            // throwing exception to let global handler catch it
+            throw e;
         }
     }
 
